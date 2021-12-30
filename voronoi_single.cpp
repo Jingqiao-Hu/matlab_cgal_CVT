@@ -51,22 +51,25 @@ public:
 	void operator()(matlab::mex::ArgumentList outputs, matlab::mex::ArgumentList inputs) {
 
 		matlab::data::TypedArray<double> pnts = std::move(inputs[0]);
-		matlab::data::TypedArray<int> idx	  = inputs[1];
+		int idx		= inputs[1][0];
 		double nelx = inputs[2][0];
 		double nely = inputs[3][0];
 
-		//idx -= 1; // matlab start with 1
+		idx -= 1; // matlab start with 1
 
-		unsigned int pnts_num = idx.getDimensions()[0];
+		unsigned int pnts_num = pnts.getDimensions()[0];
 
-		matlab::data::ArrayFactory factory;
-		matlab::data::CellArray edges_cell = factory.createCellArray({ pnts_num, 1 });
-		matlab::data::CellArray nodes_cell = factory.createCellArray({ pnts_num, 1 });
+		// matlab::data::ArrayFactory factory;
+		//matlab::data::TypedArray<double> seeds = factory.createArray<double>({ pnts_num, 2 });
+		//matlab::data::TypedArray<int> edges;
+		//matlab::data::TypedArray<double> nodes;
+		// matlab::data::CellArray edges_cell = factory.createCellArray({ pnts_num, 1 });
+		// matlab::data::CellArray nodes_cell = factory.createCellArray({ pnts_num, 1 });
 
-		voronoi_local(pnts, idx, nelx, nely, edges_cell, nodes_cell);
+		matlab::data::CellArray results = voronoi_single(pnts, idx, nelx, nely);
 
-		outputs[0] = edges_cell;
-		outputs[1] = nodes_cell;
+		outputs[0] = results[0];
+		outputs[1] = results[1];
 		//outputs[2] = seeds;
 	}
 
@@ -454,9 +457,8 @@ public:
 		return boundary_edges;
 	}
 
-	void voronoi_local(matlab::data::TypedArray<double> seeds, 
-		matlab::data::TypedArray<int> idx, double nelx, double nely,
-		matlab::data::CellArray & edges_cell, matlab::data::CellArray & nodes_cell)
+	matlab::data::CellArray voronoi_single(matlab::data::TypedArray<double> seeds, int idx, double nelx, double nely)
+		//matlab::data::TypedArray<int> & edges_local, matlab::data::TypedArray<double> & nodes_local)
 	{
 		DT dt;
 		VD vd;
@@ -495,34 +497,31 @@ public:
 		std::vector<Segment_2> rayEdgeBound = VoronoiD_UpdateEdge(halfx, halfy, rayEdge, halfEdge, boundarys);
 
 		// step.3 get voronoi		
-		unsigned int nidx = idx.getDimensions()[0];
-		for (int j = 0; j < nidx; ++j)
+		Point_2 p = points[idx].first;
+
+		// get the v_edges of each cell
+		std::vector<Segment_2> voronoi_edges = voronoi_single(p, vd, halfx, halfy, rayEdgeBound, boundarys);
+
+		// the new_pnts is ordered to assemble polygon
+		std::vector<Point_2> pnts;
+		std::vector<std::vector<int>> edges_idx(voronoi_edges.size());
+		preprocess_vcell(voronoi_edges, pnts, edges_idx);
+
+		matlab::data::ArrayFactory factory;
+		matlab::data::TypedArray<int> edges_local = factory.createArray<int>({ edges_idx.size(), 2 });
+		matlab::data::TypedArray<double> nodes_local = factory.createArray<double>({ pnts.size(), 2 });
+		for (int i = 0; i < edges_idx.size(); ++i)
 		{
-			int k = idx[j] - 1;
-			//std::cout << k << std::end;
-			Point_2 p = points[k].first;
+			edges_local[i][0] = edges_idx[i][0] + 1;
+			edges_local[i][1] = edges_idx[i][1] + 1;
 
-			// get the v_edges of each cell
-			std::vector<Segment_2> voronoi_edges = voronoi_single(p, vd, halfx, halfy, rayEdgeBound, boundarys);
-
-			// the new_pnts is ordered to assemble polygon
-			std::vector<Point_2> pnts;
-			std::vector<std::vector<int>> edges_idx(voronoi_edges.size());
-			preprocess_vcell(voronoi_edges, pnts, edges_idx);
-
-			matlab::data::ArrayFactory factory;
-			matlab::data::TypedArray<int> edges_local = factory.createArray<int>({ edges_idx.size(), 2 });
-			matlab::data::TypedArray<double> nodes_local = factory.createArray<double>({ pnts.size(), 2 });
-			for (int i = 0; i < edges_idx.size(); ++i)
-			{
-				edges_local[i][0] = edges_idx[i][0] + 1;
-				edges_local[i][1] = edges_idx[i][1] + 1;
-
-				nodes_local[i][0] = pnts[i][0];
-				nodes_local[i][1] = pnts[i][1];
-			}
-			edges_cell[j] = edges_local;
-			nodes_cell[j] = nodes_local;
+			nodes_local[i][0] = pnts[i][0];
+			nodes_local[i][1] = pnts[i][1];
 		}
+
+		 matlab::data::CellArray result_cell = factory.createCellArray({ 2, 1 });
+		 result_cell[ 0 ] = edges_local;
+		 result_cell[ 1 ] = nodes_local;
+		 return result_cell;
 	}
 };

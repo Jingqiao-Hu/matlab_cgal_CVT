@@ -4,9 +4,11 @@ generate CVT based on input seeds
 
 return each nodes and their connections (edges) for each seed
 
-1. global version: return nodes and connections of all seeds
+1. global version: return nodes and connections of all seeds, saved in cell
 
-2. local version: return the results of required seed idx
+2. local version: return the results of required seed indives, saved in cell
+
+3. single version: return the results of required seed index, saved in matrix
 
    note that the idx is started with 1 as the style in MATLAB
 
