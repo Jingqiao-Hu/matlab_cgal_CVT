@@ -57,15 +57,15 @@ public:
 		unsigned int pnts_num = pnts.getDimensions()[0];
 
 		matlab::data::ArrayFactory factory;
-		matlab::data::TypedArray<double> seeds = factory.createArray<double>({ pnts_num, 2 });
+		//matlab::data::TypedArray<double> seeds = factory.createArray<double>({ pnts_num, 2 });
 		matlab::data::CellArray edges_cell = factory.createCellArray({ pnts_num, 1 });
 		matlab::data::CellArray nodes_cell = factory.createCellArray({ pnts_num, 1 });
 
-		voronoi_bbx(pnts, nelx, nely, edges_cell, nodes_cell, seeds);
+		voronoi_cgal(pnts, nelx, nely, edges_cell, nodes_cell);
 
 		outputs[0] = edges_cell;
 		outputs[1] = nodes_cell;
-		outputs[2] = seeds;
+		//outputs[2] = seeds;
 	}
 
 	void DT2VD_edgs(DT dt, segments_lists & rayEdge, segments_lists & halfEdge)
@@ -452,9 +452,8 @@ public:
 		return boundary_edges;
 	}
 
-	void voronoi_bbx(matlab::data::TypedArray<double> pnts, double nelx, double nely,
-		matlab::data::CellArray & edges_cell, matlab::data::CellArray & nodes_cell,
-		matlab::data::TypedArray<double> & seeds)
+	void voronoi_cgal(matlab::data::TypedArray<double> pnts, double nelx, double nely,
+		matlab::data::CellArray & edges_cell, matlab::data::CellArray & nodes_cell)
 	{
 		DT dt;
 		VD vd;
@@ -497,10 +496,12 @@ public:
 		
 
 		int idx = 0;
-		DT::Finite_vertices_iterator vit = dt.finite_vertices_begin();
-		for (; vit != dt.finite_vertices_end(); vit++)
+		for ( int idx = 0; idx< points.size(); ++idx)
+		//DT::Finite_vertices_iterator vit = dt.finite_vertices_begin();
+		//for (; vit != dt.finite_vertices_end(); vit++)
 		{
-			Point_2 p = vit->point();
+			//Point_2 p = vit->point();
+			Point_2 p = points[idx].first;
 
 			// get the v_edges of each cell
 			std::vector<Segment_2> voronoi_edges = voronoi_single(p, vd, halfx, halfy, rayEdgeBound, boundarys);
@@ -523,10 +524,10 @@ public:
 			edges_cell[ idx ] = edges_local;
 			nodes_cell[ idx ] = pnts_local;
 
-			seeds[idx][0] = CGAL::to_double(p.x());
-			seeds[idx][1] = CGAL::to_double(p.y());
+			//seeds[idx][0] = CGAL::to_double(p.x());
+			//seeds[idx][1] = CGAL::to_double(p.y());
 
-			idx++;
+			//idx++;
 		}
 	}
 };
