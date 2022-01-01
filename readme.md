@@ -2,15 +2,21 @@
 
 generate CVT based on input seeds
 
-return each nodes and their connections (edges) for each seed
+return each nodes and their connections (edges) for the required seed
 
-1. global version: return nodes and connections of all seeds, saved in cell
+openmp has been used to speed up the for iteration
 
-2. local version: return the results of required seed indives, saved in cell
+### input
 
-3. single version: return the results of required seed index, saved in matrix
+1. seeds
 
-   note that the idx is started with 1 as the style in MATLAB
+2. the selected indices of seeds
+3. the x-length bounding box
+4. the y-length bounding box
+
+### output
+
+matrix of voronoi edges of the selected seeds
 
 ## library
 
@@ -18,7 +24,7 @@ CGAL
 
 ## usage
 
-1. generate .mex using mex_generation.m
+1. generate .mex using mex_generation_local.m
 
 2. the corresponding examples are also given
 
